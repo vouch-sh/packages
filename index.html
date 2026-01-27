@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vouch Packages</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a2e;
+      --code-bg: #f4f4f8;
+      --border: #d1d5db;
+      --accent: #2563eb;
+      --muted: #6b7280;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --fg: #e2e8f0;
+        --code-bg: #1e293b;
+        --border: #334155;
+        --accent: #60a5fa;
+        --muted: #94a3b8;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 0.75rem; }
+    p { margin-bottom: 1rem; color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+    code { font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+    footer { margin-top: 3rem; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <h1>Vouch Packages</h1>
+  <p>APT and YUM/DNF package repositories for <a href="https://github.com/vouch-sh/vouch">Vouch</a> &mdash; hardware-backed identity for developers.</p>
+
+  <hr>
+
+  <h2>APT (Debian / Ubuntu)</h2>
+  <pre><code>curl -fsSL https://packages.vouch.sh/gpg/vouch.asc \
+  | gpg --dearmor \
+  | sudo tee /usr/share/keyrings/vouch-archive-keyring.gpg &gt; /dev/null
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/vouch-archive-keyring.gpg] https://packages.vouch.sh/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/vouch.list &gt; /dev/null
+
+sudo apt-get update &amp;&amp; sudo apt-get install -y vouch</code></pre>
+
+  <h2>YUM / DNF (Fedora / RHEL)</h2>
+  <pre><code>sudo tee /etc/yum.repos.d/vouch.repo &lt;&lt; 'EOF'
+[vouch]
+name=Vouch
+baseurl=https://packages.vouch.sh/rpm/$basearch/
+gpgcheck=1
+gpgkey=https://packages.vouch.sh/gpg/vouch.asc
+enabled=1
+EOF
+
+sudo dnf install -y vouch</code></pre>
+
+  <hr>
+
+  <h2>GPG Key</h2>
+  <p>The repository signing key is available at <a href="/gpg/vouch.asc">/gpg/vouch.asc</a>.</p>
+
+  <footer>
+    <a href="https://github.com/vouch-sh/vouch">GitHub</a> &middot;
+    <a href="https://vouch.sh">vouch.sh</a>
+  </footer>
+</body>
+</html>
