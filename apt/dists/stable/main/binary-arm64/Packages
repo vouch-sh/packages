@@ -1,14 +1,14 @@
 Package: vouch
-Version: 0.1.5
+Version: 0.1.7
 Architecture: arm64
 Maintainer: Vouch <hello@vouch.sh>
-Installed-Size: 8783
+Installed-Size: 8911
 Depends: libudev1
-Filename: pool/main/vouch_0.1.5_arm64.deb
-Size: 4907228
-MD5sum: 97ac149f0a9815351a1788ee542bf40d
-SHA1: 3ed1ca284056910a06cd4c8b764def443931e053
-SHA256: 91171c3ee48bef22ed8a80eaf6dfd219bbfe4b75ee32a001d63137e62c2c7afd
+Filename: pool/main/vouch_0.1.7_arm64.deb
+Size: 4979468
+MD5sum: a74f5ba27e7f540ea406daa12c82f7ae
+SHA1: 11bb0fc95ad1b614cc69fc7e05b9c2324d702419
+SHA256: c8ff9bc22ac7dabbdc81657449eaf9846e24697e44f1acae7687bbaf02d71f98
 Priority: optional
 Homepage: https://github.com/vouch-sh/vouch
 Description: Hardware-backed identity for developers
