@@ -1,14 +1,14 @@
 Package: vouch
-Version: 2026.2.6
+Version: 2026.2.7
 Architecture: amd64
 Maintainer: Vouch <hello@vouch.sh>
 Installed-Size: 11706
 Depends: libudev1
-Filename: pool/main/vouch_2026.2.6_amd64.deb
-Size: 5323336
-MD5sum: 04a693a93b8780389edab3ed671d06b8
-SHA1: c513ec7a59b00826c3a07e7031722fdc2d06c850
-SHA256: 40187c2e4c6af24835cd0b33b4d44b35433d87c3996a309fd04e243766bba5a1
+Filename: pool/main/vouch_2026.2.7_amd64.deb
+Size: 5323534
+MD5sum: 0542208dc7d72ecbae755a8ceca3c881
+SHA1: 3b7204bbe6594fe9a6dc00cedef8c1bcf2447f42
+SHA256: 47cdd9f321595270e70a44afbb5c8823358e877597e5aaa3fb15cb856dc7fae3
 Priority: optional
 Homepage: https://github.com/vouch-sh/vouch
 Description: Hardware-backed identity for developers
