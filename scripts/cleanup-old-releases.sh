@@ -135,11 +135,12 @@ echo "Packages removed: $removed_count"
 # ---------------------------------------------------------------------------
 # Safety check: ensure GPG_KEY_ID is set before signing metadata
 # ---------------------------------------------------------------------------
-if [[ -z "${GPG_KEY_ID:-}" ]]; then
-  echo "ERROR: GPG_KEY_ID is not set. Metadata must be signed to keep the" >&2
-  echo "repository functional. Set GPG_KEY_ID and re-run, or use --dry-run." >&2
+if [[ -z "${GPG_KEY_ID:-}" || -z "${GPG_PASSPHRASE:-}" ]]; then
+  echo "ERROR: GPG_KEY_ID and GPG_PASSPHRASE must be set. Metadata must be" >&2
+  echo "signed to keep the repository functional. Set both and re-run, or use --dry-run." >&2
   exit 1
 fi
+
 
 # ---------------------------------------------------------------------------
 # Regenerate APT metadata
@@ -187,9 +188,11 @@ apt-ftparchive \
 
 # Sign Release file
 rm -f "$apt_dists/Release.gpg" "$apt_dists/InRelease"
-gpg --batch --yes --default-key "$GPG_KEY_ID" \
+gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+  --default-key "$GPG_KEY_ID" \
   -abs -o "$apt_dists/Release.gpg" "$apt_dists/Release"
-gpg --batch --yes --default-key "$GPG_KEY_ID" \
+gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+  --default-key "$GPG_KEY_ID" \
   --clearsign -o "$apt_dists/InRelease" "$apt_dists/Release"
 echo "  APT metadata signed."
 
@@ -205,7 +208,8 @@ for arch_dir in "$REPO_ROOT/rpm/x86_64" "$REPO_ROOT/rpm/aarch64"; do
   createrepo_c --update "$arch_dir"
 
   rm -f "$arch_dir/repodata/repomd.xml.asc"
-  gpg --batch --yes --default-key "$GPG_KEY_ID" \
+  gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+    --default-key "$GPG_KEY_ID" \
     --detach-sign --armor "$arch_dir/repodata/repomd.xml"
   echo "  RPM metadata signed: ${arch_dir#$REPO_ROOT/}"
 done

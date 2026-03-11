@@ -62,6 +62,7 @@ jobs:
           ./scripts/cleanup-old-releases.sh --keep "$KEEP" $DRY_RUN_FLAG 2>&1 | tee /tmp/cleanup-output.txt
         env:
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Commit and push changes
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' }}
