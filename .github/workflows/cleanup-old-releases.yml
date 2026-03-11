@@ -1,0 +1,89 @@
+name: Cleanup Old Releases
+
+on:
+  # Run monthly on the 1st at 03:00 UTC (dry-run only — creates an issue with the report)
+  schedule:
+    - cron: "0 3 1 * *"
+
+  # Manual trigger for actual cleanup
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: "Number of most recent versions to keep"
+        required: false
+        default: "5"
+      dry_run:
+        description: "Dry run — only show what would be removed"
+        required: false
+        default: "true"
+        type: boolean
+
+permissions:
+  contents: write
+
+# Prevent concurrent cleanup runs from colliding on git push
+concurrency:
+  group: cleanup-old-releases
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+
+      - name: Install repository tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq apt-utils dpkg-dev createrepo-c
+
+      - name: Import GPG key
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Run cleanup
+        id: cleanup
+        run: |
+          KEEP="${{ github.event.inputs.keep || '5' }}"
+
+          # Scheduled runs are always dry-run for safety.
+          # Manual runs respect the dry_run input.
+          DRY_RUN_FLAG="--dry-run"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.dry_run }}" == "false" ]]; then
+            DRY_RUN_FLAG=""
+          fi
+
+          ./scripts/cleanup-old-releases.sh --keep "$KEEP" $DRY_RUN_FLAG 2>&1 | tee /tmp/cleanup-output.txt
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+
+      - name: Commit and push changes
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            KEEP="${{ github.event.inputs.keep || '5' }}"
+            git commit -m "chore: clean up old package versions, keeping $KEEP most recent
+
+          Automated cleanup by GitHub Actions."
+            git push
+          fi
+
+      - name: Post cleanup summary
+        if: always()
+        run: |
+          echo "### Cleanup Report" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/cleanup-output.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
