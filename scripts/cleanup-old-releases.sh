@@ -142,11 +142,6 @@ fi
 
 echo "Packages removed: $removed_count"
 
-if [[ "$removed_count" -eq 0 ]]; then
-  echo "Nothing was removed, skipping metadata regeneration."
-  exit 0
-fi
-
 # ---------------------------------------------------------------------------
 # Regenerate APT metadata
 # ---------------------------------------------------------------------------
