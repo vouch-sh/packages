@@ -4,7 +4,7 @@ Architecture: arm64
 Maintainer: Vouch <hello@vouch.sh>
 Installed-Size: 9680
 Depends: libudev1
-Filename: pool/main/vouch_2026.3.13_arm64.deb
+Filename: apt/pool/main/vouch_2026.3.13_arm64.deb
 Size: 5379944
 MD5sum: 8d6a7c1b4e969f1e48e5ba618f4810c1
 SHA1: 17727ea556b592d4884c3e207ba114490ea76cd5
