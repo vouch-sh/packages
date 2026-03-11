@@ -70,57 +70,32 @@ discover_versions() {
 all_versions="$(discover_versions)"
 total="$(echo "$all_versions" | wc -l)"
 
-if [[ "$total" -le "$KEEP" ]]; then
-  echo "Only $total version(s) found, nothing to clean up (keeping $KEEP)."
-  exit 0
-fi
-
-versions_to_remove="$(echo "$all_versions" | head -n -"$KEEP")"
-versions_to_keep="$(echo "$all_versions" | tail -n "$KEEP")"
-
-echo "=== Cleanup Summary ==="
-echo "Total versions found: $total"
-echo "Keeping $KEEP most recent:"
-echo "$versions_to_keep" | sed 's/^/  /'
-echo ""
-echo "Removing $(echo "$versions_to_remove" | wc -l) older version(s):"
-echo "$versions_to_remove" | sed 's/^/  /'
-echo ""
-
-if $DRY_RUN; then
-  echo "[dry-run] No files will be deleted."
-  echo ""
-  echo "Files that would be removed:"
-fi
-
-# ---------------------------------------------------------------------------
-# Safety check: ensure GPG_KEY_ID is set before deleting anything
-# ---------------------------------------------------------------------------
-if ! $DRY_RUN && [[ -z "${GPG_KEY_ID:-}" ]]; then
-  echo "ERROR: GPG_KEY_ID is not set. Metadata must be signed to keep the" >&2
-  echo "repository functional. Set GPG_KEY_ID and re-run, or use --dry-run." >&2
-  exit 1
-fi
-
 removed_count=0
 
-while IFS= read -r ver; do
-  # Remove .deb packages for this version
-  for f in "$REPO_ROOT/apt/pool/main/vouch_${ver}_"*.deb; do
-    [[ -e "$f" ]] || continue
-    if $DRY_RUN; then
-      echo "  would remove: ${f#$REPO_ROOT/}"
-    else
-      echo "  removing: ${f#$REPO_ROOT/}"
-      rm -f "$f"
-    fi
-    removed_count=$((removed_count + 1))
-  done
+if [[ "$total" -le "$KEEP" ]]; then
+  echo "Only $total version(s) found, nothing to clean up (keeping $KEEP)."
+else
+  versions_to_remove="$(echo "$all_versions" | head -n -"$KEEP")"
+  versions_to_keep="$(echo "$all_versions" | tail -n "$KEEP")"
 
-  # Remove .rpm packages for this version (vouch and vouch-server)
-  for arch_dir in "$REPO_ROOT/rpm/x86_64" "$REPO_ROOT/rpm/aarch64"; do
-    [[ -d "$arch_dir" ]] || continue
-    for f in "$arch_dir/vouch-${ver}-1."*.rpm "$arch_dir/vouch-server-${ver}-1."*.rpm; do
+  echo "=== Cleanup Summary ==="
+  echo "Total versions found: $total"
+  echo "Keeping $KEEP most recent:"
+  echo "$versions_to_keep" | sed 's/^/  /'
+  echo ""
+  echo "Removing $(echo "$versions_to_remove" | wc -l) older version(s):"
+  echo "$versions_to_remove" | sed 's/^/  /'
+  echo ""
+
+  if $DRY_RUN; then
+    echo "[dry-run] No files will be deleted."
+    echo ""
+    echo "Files that would be removed:"
+  fi
+
+  while IFS= read -r ver; do
+    # Remove .deb packages for this version
+    for f in "$REPO_ROOT/apt/pool/main/vouch_${ver}_"*.deb; do
       [[ -e "$f" ]] || continue
       if $DRY_RUN; then
         echo "  would remove: ${f#$REPO_ROOT/}"
@@ -130,8 +105,23 @@ while IFS= read -r ver; do
       fi
       removed_count=$((removed_count + 1))
     done
-  done
-done <<< "$versions_to_remove"
+
+    # Remove .rpm packages for this version (vouch and vouch-server)
+    for arch_dir in "$REPO_ROOT/rpm/x86_64" "$REPO_ROOT/rpm/aarch64"; do
+      [[ -d "$arch_dir" ]] || continue
+      for f in "$arch_dir/vouch-${ver}-1."*.rpm "$arch_dir/vouch-server-${ver}-1."*.rpm; do
+        [[ -e "$f" ]] || continue
+        if $DRY_RUN; then
+          echo "  would remove: ${f#$REPO_ROOT/}"
+        else
+          echo "  removing: ${f#$REPO_ROOT/}"
+          rm -f "$f"
+        fi
+        removed_count=$((removed_count + 1))
+      done
+    done
+  done <<< "$versions_to_remove"
+fi
 
 echo ""
 if $DRY_RUN; then
@@ -141,6 +131,15 @@ if $DRY_RUN; then
 fi
 
 echo "Packages removed: $removed_count"
+
+# ---------------------------------------------------------------------------
+# Safety check: ensure GPG_KEY_ID is set before signing metadata
+# ---------------------------------------------------------------------------
+if [[ -z "${GPG_KEY_ID:-}" ]]; then
+  echo "ERROR: GPG_KEY_ID is not set. Metadata must be signed to keep the" >&2
+  echo "repository functional. Set GPG_KEY_ID and re-run, or use --dry-run." >&2
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Regenerate APT metadata
