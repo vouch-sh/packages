@@ -21,6 +21,11 @@ on:
 permissions:
   contents: write
 
+# Prevent concurrent cleanup runs from colliding on git push
+concurrency:
+  group: cleanup-old-releases
+  cancel-in-progress: false
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest

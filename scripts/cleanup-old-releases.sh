@@ -93,6 +93,15 @@ if $DRY_RUN; then
   echo "Files that would be removed:"
 fi
 
+# ---------------------------------------------------------------------------
+# Safety check: ensure GPG_KEY_ID is set before deleting anything
+# ---------------------------------------------------------------------------
+if ! $DRY_RUN && [[ -z "${GPG_KEY_ID:-}" ]]; then
+  echo "ERROR: GPG_KEY_ID is not set. Metadata must be signed to keep the" >&2
+  echo "repository functional. Set GPG_KEY_ID and re-run, or use --dry-run." >&2
+  exit 1
+fi
+
 removed_count=0
 
 while IFS= read -r ver; do
@@ -139,18 +148,6 @@ if [[ "$removed_count" -eq 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Safety check: ensure GPG_KEY_ID is set before regenerating metadata
-# ---------------------------------------------------------------------------
-if [[ -z "${GPG_KEY_ID:-}" ]]; then
-  echo "ERROR: GPG_KEY_ID is not set. Metadata must be signed to keep the" >&2
-  echo "repository functional. Set GPG_KEY_ID and re-run, or use --dry-run." >&2
-  echo "" >&2
-  echo "The package files have already been deleted. You must regenerate and" >&2
-  echo "sign metadata before pushing, or revert with 'git checkout -- .'." >&2
-  exit 1
-fi
-
-# ---------------------------------------------------------------------------
 # Regenerate APT metadata
 # ---------------------------------------------------------------------------
 echo ""
@@ -161,26 +158,31 @@ cd "$REPO_ROOT"
 
 for arch in amd64 arm64; do
   mkdir -p "$apt_dists/main/binary-$arch"
-  # dpkg-scanpackages is simpler and more reliable than apt-ftparchive for this
-  dpkg-scanpackages --arch "$arch" apt/pool/main /dev/null \
-    > "$apt_dists/main/binary-$arch/Packages" 2>/dev/null || \
-  apt-ftparchive packages apt/pool/main \
-    > "$apt_dists/main/binary-$arch/Packages.tmp" 2>/dev/null && \
-  # Filter to only the requested architecture
-  awk -v arch="$arch" '
-    BEGIN { keep=0 }
-    /^$/ { if (keep) print ""; keep=0; next }
-    /^Architecture: / { if ($2 == arch) keep=1 }
-    { if (keep || !/^Architecture: /) buf = buf $0 "\n";
-      if (/^Architecture: / && $2 == arch) { printf "%s", buf; buf="" }
-      if (/^Architecture: / && $2 != arch) { buf="" }
-    }
-  ' "$apt_dists/main/binary-$arch/Packages.tmp" \
-    > "$apt_dists/main/binary-$arch/Packages" 2>/dev/null && \
-  rm -f "$apt_dists/main/binary-$arch/Packages.tmp" || true
+  packages_file="$apt_dists/main/binary-$arch/Packages"
 
-  gzip -9 -k -f "$apt_dists/main/binary-$arch/Packages"
-  echo "  Generated Packages for $arch ($(grep -c '^Package:' "$apt_dists/main/binary-$arch/Packages" || echo 0) packages)"
+  if dpkg-scanpackages --arch "$arch" apt/pool/main /dev/null \
+       > "$packages_file" 2>/dev/null; then
+    : # success
+  elif command -v apt-ftparchive >/dev/null 2>&1; then
+    # Fallback: generate all-arch Packages, then filter to the target arch
+    apt-ftparchive packages apt/pool/main 2>/dev/null \
+      | awk -v arch="$arch" '
+          BEGIN { rec=""; match_arch=0 }
+          /^$/ {
+            if (match_arch) printf "%s\n", rec
+            rec=""; match_arch=0; next
+          }
+          { rec = (rec == "" ? $0 : rec "\n" $0) }
+          /^Architecture: / && $2 == arch { match_arch=1 }
+          END { if (match_arch && rec != "") printf "%s\n", rec }
+        ' > "$packages_file"
+  else
+    echo "ERROR: Neither dpkg-scanpackages nor apt-ftparchive is available." >&2
+    exit 1
+  fi
+
+  gzip -9 -k -f "$packages_file"
+  echo "  Generated Packages for $arch ($(grep -c '^Package:' "$packages_file" || echo 0) packages)"
 done
 
 # Generate Release file
