@@ -81,10 +81,10 @@ else
   echo "=== Cleanup Summary ==="
   echo "Total versions found: $total"
   echo "Keeping $KEEP most recent:"
-  echo "$versions_to_keep" | sed 's/^/  /'
+  echo "  ${versions_to_keep//$'\n'/$'\n  '}"
   echo ""
   echo "Removing $(echo "$versions_to_remove" | wc -l) older version(s):"
-  echo "$versions_to_remove" | sed 's/^/  /'
+  echo "  ${versions_to_remove//$'\n'/$'\n  '}"
   echo ""
 
   if $DRY_RUN; then
@@ -98,9 +98,9 @@ else
     for f in "$REPO_ROOT/apt/pool/main/vouch_${ver}_"*.deb; do
       [[ -e "$f" ]] || continue
       if $DRY_RUN; then
-        echo "  would remove: ${f#$REPO_ROOT/}"
+        echo "  would remove: ${f#"$REPO_ROOT"/}"
       else
-        echo "  removing: ${f#$REPO_ROOT/}"
+        echo "  removing: ${f#"$REPO_ROOT"/}"
         rm -f "$f"
       fi
       removed_count=$((removed_count + 1))
@@ -112,9 +112,9 @@ else
       for f in "$arch_dir/vouch-${ver}-1."*.rpm "$arch_dir/vouch-server-${ver}-1."*.rpm; do
         [[ -e "$f" ]] || continue
         if $DRY_RUN; then
-          echo "  would remove: ${f#$REPO_ROOT/}"
+          echo "  would remove: ${f#"$REPO_ROOT"/}"
         else
-          echo "  removing: ${f#$REPO_ROOT/}"
+          echo "  removing: ${f#"$REPO_ROOT"/}"
           rm -f "$f"
         fi
         removed_count=$((removed_count + 1))
@@ -155,12 +155,14 @@ for arch in amd64 arm64; do
   mkdir -p "$apt_dists/main/binary-$arch"
   packages_file="$apt_dists/main/binary-$arch/Packages"
 
-  if dpkg-scanpackages --arch "$arch" apt/pool/main /dev/null \
+  # Run from $REPO_ROOT/apt so Filename: is relative to the apt source root
+  # (https://packages.vouch.sh/apt), not the git repo root.
+  if (cd "$REPO_ROOT/apt" && dpkg-scanpackages --arch "$arch" pool/main /dev/null) \
        > "$packages_file" 2>/dev/null; then
     : # success
   elif command -v apt-ftparchive >/dev/null 2>&1; then
     # Fallback: generate all-arch Packages, then filter to the target arch
-    apt-ftparchive packages apt/pool/main 2>/dev/null \
+    (cd "$REPO_ROOT/apt" && apt-ftparchive packages pool/main 2>/dev/null) \
       | awk -v arch="$arch" '
           BEGIN { rec=""; match_arch=0 }
           /^$/ {
@@ -204,14 +206,14 @@ echo "=== Regenerating RPM metadata ==="
 
 for arch_dir in "$REPO_ROOT/rpm/x86_64" "$REPO_ROOT/rpm/aarch64"; do
   [[ -d "$arch_dir" ]] || continue
-  echo "  createrepo_c: ${arch_dir#$REPO_ROOT/}"
+  echo "  createrepo_c: ${arch_dir#"$REPO_ROOT"/}"
   createrepo_c --update "$arch_dir"
 
   rm -f "$arch_dir/repodata/repomd.xml.asc"
   gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
     --default-key "$GPG_KEY_ID" \
     --detach-sign --armor "$arch_dir/repodata/repomd.xml"
-  echo "  RPM metadata signed: ${arch_dir#$REPO_ROOT/}"
+  echo "  RPM metadata signed: ${arch_dir#"$REPO_ROOT"/}"
 done
 
 echo ""
