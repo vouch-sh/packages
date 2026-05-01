@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # to chain into publish-to-s3.yml after a successful cleanup push
 
 # Prevent concurrent cleanup runs from colliding on git push
 concurrency:
@@ -65,7 +66,10 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Commit and push changes
+        id: commit
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' }}
+        env:
+          KEEP: ${{ github.event.inputs.keep || '5' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -73,13 +77,22 @@ jobs:
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
           else
-            KEEP="${{ github.event.inputs.keep || '5' }}"
             git commit -m "chore: clean up old package versions, keeping $KEEP most recent
 
           Automated cleanup by GitHub Actions."
             git push
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # GITHUB_TOKEN-authored pushes do not trigger downstream workflows, so
+      # explicitly dispatch the publish workflow when we actually pushed.
+      - name: Trigger S3 publish
+        if: ${{ steps.commit.outputs.pushed == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish-to-s3.yml --ref main
 
       - name: Post cleanup summary
         if: always()
