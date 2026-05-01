@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-APT and YUM/DNF package repositories for [Vouch](https://github.com/vouch-sh/vouch) — hardware-backed identity for developers.
+APT, YUM/DNF, Homebrew, and winget packages for [Vouch](https://github.com/vouch-sh/vouch) — hardware-backed identity for developers.
 
 Hosted at [packages.vouch.sh](https://packages.vouch.sh).
 
@@ -36,6 +36,18 @@ EOF
 sudo dnf install -y vouch
 ```
 
+### Homebrew (macOS)
+
+```bash
+brew install vouch-sh/tap/vouch
+```
+
+### winget (Windows)
+
+```powershell
+winget install SmokeTurner.Vouch
+```
+
 ## Packages
 
 | Package | Type | Architectures |
@@ -43,6 +55,8 @@ sudo dnf install -y vouch
 | `vouch` | APT (.deb) | amd64, arm64 |
 | `vouch` | RPM (.rpm) | x86_64, aarch64 |
 | `vouch-server` | RPM (.rpm) | x86_64, aarch64 |
+| `vouch-sh/tap/vouch` | Homebrew | macOS |
+| `SmokeTurner.Vouch` | winget | amd64 |
 
 ## GPG Verification
 

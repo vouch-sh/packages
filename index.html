@@ -193,7 +193,7 @@
       </div>
       <h1>Vouch Packages</h1>
     </div>
-    <p class="subtitle">APT and YUM/DNF package repositories for <a href="https://github.com/vouch-sh/vouch">Vouch</a> &mdash; hardware-backed identity for developers.</p>
+    <p class="subtitle">APT, YUM/DNF, Homebrew, and winget packages for <a href="https://github.com/vouch-sh/vouch">Vouch</a> &mdash; hardware-backed identity for developers.</p>
     <div class="badges">
       <span class="badge">amd64</span>
       <span class="badge">arm64</span>
@@ -204,6 +204,8 @@
   <div class="tabs" role="tablist">
     <button class="tab active" role="tab" aria-selected="true" data-tab="apt">APT (Debian / Ubuntu)</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="rpm">YUM / DNF (Fedora / RHEL)</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="brew">Homebrew (macOS)</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="winget">winget (Windows)</button>
   </div>
 
   <div id="apt" class="tab-panel active" role="tabpanel">
@@ -232,6 +234,20 @@ enabled=1
 EOF
 
 sudo dnf install -y vouch</code></pre>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+  </div>
+
+  <div id="brew" class="tab-panel" role="tabpanel">
+    <div class="code-block">
+      <pre><code>brew install vouch-sh/tap/vouch</code></pre>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+  </div>
+
+  <div id="winget" class="tab-panel" role="tabpanel">
+    <div class="code-block">
+      <pre><code>winget install SmokeTurner.Vouch</code></pre>
       <button class="copy-btn" onclick="copyCode(this)">Copy</button>
     </div>
   </div>
